@@ -1,0 +1,116 @@
+---
+title: "TCGA analysis"
+author: "Paulyna Magana"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_width: 6
+    fig_height: 8
+    fig_caption: true
+header-includes:
+- \usepackage{gb4e}
+- \noautomath
+
+
+knit: (function(input_file, encoding) { output_dir = "./";
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), output_dir, 'TCGA_analysis'))})
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+## TCGA Analysis
+
+```{r}
+library(DT) #we will use it to visualize the results
+library(TCGAbiolinks)
+library("limma")
+library("edgeR")
+library("caret")
+library("SummarizedExperiment")
+library("gplots")
+library("survival")
+library("survminer")
+library("RColorBrewer")
+library("genefilter")
+```
+
+To download TCGA data with TCGAbiolinks, you need to follow 3 steps. First, you will query the TCGA database through R with the function GDCquery. This will allow you to investigate the data available at the TCGA database. Next, we use GDCdownload to download raw version of desired files into your computer. Finally GDCprepare will read these files and make R data structures so that we can further analyse them.
+
+Before we get there however we need to know what we are searching for. We can check all the available projects at TCGA with the command bellow. Since there are many lets look at the first 6 projects using the command head().
+
+
+```{r}
+GDCprojects = getGDCprojects()
+
+head(GDCprojects[c("project_id", "name")])
+```
+
+
+```{r}
+TCGAbiolinks:::getProjectSummary("TCGA-LUSC")
+```
+
+Of note, not all patients were measured for all data types. Also, some data types have more files than samples. This is the case when more experiments were performed per patient, i.e. transcriptome profiling was performed both in mRNA and miRNA, or that data have been analysed by distinct computational strategies.
+
+Let us start by querying all RNA-seq data from LIHC project. When using GDCquery we always need to specify the id of the project, i.e. “TCGA_LIHC”, and the data category we are interested in, i.e. “Transcriptome Profiling”. Here, we will focus on a particular type of data summarization for mRNA-seq data (workflow.type), which is based on raw counts estimated with HTSeq.
+
+Note that performing this query will take a few of minutes
+
+
+
+
+```{r}
+library(maftools)
+library(dplyr)
+library(TCGAWorkflowData)
+
+# recovering data from TCGAWorkflowData package.
+data(mafMutect2LGGGBM)
+
+# To prepare for maftools we will also include clinical data
+# For a mutant vs WT survival analysis 
+# get indexed clinical patient data for GBM samples
+gbm_clin <- GDCquery_clinic(project = "TCGA-GBM", type = "Clinical")
+# get indexed clinical patient data for LGG samples
+lgg_clin <- GDCquery_clinic(project = "TCGA-LGG", type = "Clinical")
+# Bind the results, as the columns might not be the same,
+# we will will plyr rbind.fill, to have all columns from both files
+clinical <- plyr::rbind.fill(gbm_clin,lgg_clin)
+colnames(clinical)[1] <- "Tumor_Sample_Barcode"
+
+# we need to create a binary variable 1 is dead 0 is not dead
+plyr::count(clinical$vital_status)
+clinical$Overall_Survival_Status <- 1 # dead
+clinical$Overall_Survival_Status[which(clinical$vital_status != "Dead")] <- 0
+
+# If patient is not dead we don't have days_to_death (NA)
+# we will set it as the last day we know the patient is still alive
+clinical$time <- clinical$days_to_death
+clinical$time[is.na(clinical$days_to_death)] <- clinical$days_to_last_follow_up[is.na(clinical$days_to_death)]
+
+# Create object to use in maftools
+maf <- read.maf(maf = mut, clinicalData = clinical, isTCGA = TRUE)
+
+
+```
+
+
+
+
+```{r}
+plotmafSummary(
+  maf = maf,
+  rmOutlier = TRUE,
+  addStat = 'median',
+  dashboard = TRUE
+)
+```
+
+
+
