@@ -114,3 +114,31 @@ plotmafSummary(
 
 
 
+
+```{r}
+library(maftools)
+library(dplyr)
+query <- GDCquery(
+    project = "TCGA-CHOL", 
+    data.category = "Simple Nucleotide Variation", 
+    access = "open", 
+    legacy = FALSE, 
+    data.type = "Masked Somatic Mutation", 
+    workflow.type = "Aliquot Ensemble Somatic Variant Merging and Masking"
+)
+GDCdownload(query)
+maf <- GDCprepare(query)
+
+maf <- maf %>% maftools::read.maf
+```
+
+
+
+
+
+
+
+
+
+
+
