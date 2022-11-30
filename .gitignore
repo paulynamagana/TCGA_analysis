@@ -1,2 +1,4 @@
-**/
 *.rda
+**/GDCdata
+/TCGA_analysis_cache
+*.RDS
