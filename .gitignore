@@ -1,4 +1,4 @@
-*.rda
-**/GDCdata
+*.idat
 /TCGA_analysis_cache
 *.RDS
+*.tsv

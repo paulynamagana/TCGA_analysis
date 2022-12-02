@@ -26,7 +26,6 @@ query.raw <- GDCquery(
   experimental.strategy = "Methylation array")
 
 
-
 View(getResults(query.raw))
 
 results <- getResults(query.raw)
@@ -42,15 +41,48 @@ GDCdownload(query = query.raw)
 
 
 
+library(tidyverse)
+library(dplyr)
+
+
+sheet <- query.raw[[1]][[1]]
+
+
+colnames(sheet)[colnames(sheet) == 'sample_type'] <- 'Sample_Group'
+targets <- sheet %>%
+  mutate(Sample_Group = str_replace(Sample_Group, " ", "_"))
+
+#create Basename column it should not include _Red.idat
+library(stringr)
+
+dataDirectory <- "./GDCdata/TCGA-LUSC/legacy/Raw_microarray_data/Raw_intensities"
+
+
+
+##### create basename
+basename_folder <- sub("_...\\.idat", "", targets$file_name)
+targets$Basename <- paste(dataDirectory, basename_folder, sep="/")
+
+##extract strings
+sentrixid <- sub("_R.....", "", basename_folder)
+sentrix_position<- sub( ".*_", "", basename_folder)
+
+#######
+targets$Slide <- sentrixid
+targets$Array <- sentrix_position
+targets$Sample_Label <- targets$Sample_Group
+
+
+duplicated(targets$Basename)
+targets <-targets[!duplicated(targets$Basename), ]
+
+
+##review this code########################
 ##GDC does not have a SampleSheet.csv file, so have to create one
-SampleSheet <- results[,c("id", "data_format", "file_name", "data_category", "platform", "file_id", "experimental_strategy", "project", "sample_type")]
+SampleSheet <- targets[,c("id", "file_name", "data_category", "platform", "file_id", "experimental_strategy", "project", "Sample_Label", "Array", "Slide", "Basename")]
 
-
-
-summary(factor(SampleSheet$platform))
-summary(factor(SampleSheet$sample_type))
-
-write.csv(SampleSheet, "./GDCdata/TCGA-LUSC/legacy/Raw_microarray_data/Raw_intensities/SampleSheet.csv", row.names = TRUE)
+####save samplesheet
+write.csv(SampleSheet, "./GDCdata/TCGA-LUSC/legacy/Raw_microarray_data/Raw_intensities/SampleSheet.csv", row.names = FALSE)
 
 
 
