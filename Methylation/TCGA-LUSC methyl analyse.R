@@ -57,14 +57,13 @@ save_dir <- "./meth_plots/"
 list.files(dataDirectory, pattern = "*.csv")
 
 #load SampleSheet.csv file
-
+SampleSheet <- read_csv("GDCdata/TCGA-LUSC/legacy/Raw_microarray_data/Raw_intensities/SampleSheet.csv")
 
 
 #file
 #6264509100/6264509100_R01C01_Grn.idat
 #Basename
 ## 1  C:/Users/Chrit/Documents/R/win-library/3.4/methylationArrayAnalysis/extdata/6264509100/6264509100_R01C01
-
 met <- read.metharray.exp(targets=SampleSheet, verbose=TRUE, recursive =TRUE)
 met
 
