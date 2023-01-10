@@ -2,3 +2,6 @@
 /TCGA_analysis_cache
 *.RDS
 *.tsv
+*.png
+*rda
+*.csv

@@ -59,12 +59,12 @@ dplyr::filter(GDCprojects, grepl('Lung', name))
 
 
 ```{r}
-TCGAbiolinks:::getProjectSummary("TCGA-LUSC")
+TCGAbiolinks:::getProjectSummary("TCGA-LUAD")
 ```
 
 Of note, not all patients were measured for all data types. Also, some data types have more files than samples. This is the case when more experiments were performed per patient, i.e. transcriptome profiling was performed both in mRNA and miRNA, or that data have been analysed by distinct computational strategies.
 
-Let us start by querying all RNA-seq data from LUSC project.
+Let us start by querying all RNA-seq data from LUAD project.
 
 When using GDCquery we always need to specify the id of the project, i.e. “TCGA_LUSC”, and the data category we are interested in, i.e. “Transcriptome Profiling”. Here, we will focus on a particular type of data summarization for mRNA-seq data (workflow.type), which is based on raw counts estimated with HTSeq.
 
@@ -73,7 +73,7 @@ Note that performing this query will take a few of minutes
 
 ```{r}
 query_TCGA = GDCquery(
-  project = "TCGA-LUSC",
+  project = "TCGA-LUAD",
   data.category = "Transcriptome Profiling", # parameter enforced by GDCquery
   experimental.strategy = "RNA-Seq") # some cases there might be more than 1 data type = gene expression, splice junstion quantification
 ```
@@ -101,9 +101,10 @@ In some cases, there might be more than one data_type(as column in table).
 I'm querying the Gene expression Quantification but there is also Splice Junction Quantification
 
 ```{r}
-query_TCGA = GDCquery(
-  project = "TCGA-LUSC",
+query_TCGA_raw = GDCquery(
+  project = "TCGA-LUAD",
   data.category = "Transcriptome Profiling", # parameter enforced by GDCquery
+  access= "open",
   experimental.strategy = "RNA-Seq",
   workflow.type = "STAR - Counts",
   data.type = "Gene Expression Quantification") #double check
@@ -112,16 +113,21 @@ query_TCGA = GDCquery(
 
 
 ```{r}
-GDCdownload(query = query_TCGA) # 551 files
+GDCdownload(query_TCGA_raw, method = "api")
 ```
 
 
 It might take some time, and be downloaded in chunks to a folder called GDCdata
 
 ```{r}
-lusc_res = getResults(query_TCGA)
+luad.count  <- GDCprepare(query = query_TCGA_raw, save = TRUE, save.filename = "TCGA_LUAD.rda", summarizedExperiment = TRUE)
 
-dim(lusc_res)
+```
+
+
+
+```{r}
+head(query_TCGA_raw)
 
 ```
 
